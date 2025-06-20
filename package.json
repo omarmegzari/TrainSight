@@ -23,14 +23,21 @@
     "expo-splash-screen": "~0.30.9",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.8",
-    "expo-web-browser": "~14.1.6",
+    "expo-web-browser": "~14.2.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "0.79.3",
+    "react-native": "0.79.4",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-web": "~0.20.0"
+    "react-native-web": "~0.20.0",
+    "react-native-webview": "13.13.5",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "expo-camera": "~16.1.8",
+    "expo-av": "~15.1.6",
+    "expo-sensors": "~14.1.4",
+    "expo-location": "~18.1.5",
+    "expo-haptics": "~14.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -39,6 +46,18 @@
     "jest-expo": "~53.0.7",
     "react-test-renderer": "19.0.0",
     "typescript": "~5.8.3"
+  },
+  "expo": {
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ]
+    ]
   },
   "private": true
 }
