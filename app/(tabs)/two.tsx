@@ -15,102 +15,187 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { DeviceMotion } from 'expo-sensors';
-import { useLanguage } from '../../src/context/LanguageContext';
+import { useLanguage, LanguageCode } from '../../src/context/LanguageContext';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
+import { Video, ResizeMode } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
 
-const CAMERA_FOV_HORIZONTAL = 60; // degrees
-const CAMERA_FOV_VERTICAL = 45; // degrees
-const MAX_DISPLAY_DISTANCE = 500; // meters
-const DEVICE_MOTION_UPDATE_INTERVAL = 100; // ms
-const LOCATION_UPDATE_INTERVAL = 1000; // ms
+const CAMERA_FOV_HORIZONTAL = 60;
+const CAMERA_FOV_VERTICAL = 45;
+const MAX_DISPLAY_DISTANCE = 500;
+const DEVICE_MOTION_UPDATE_INTERVAL = 100;
+const LOCATION_UPDATE_INTERVAL = 1000;
+
+interface TranslatableText {
+  fr: string;
+  en: string;
+  ar: string;
+}
 
 interface StationPoint {
   id: string;
-  name: string;
+  name: TranslatableText;
   coordinates: { latitude: number; longitude: number };
   icon: string;
-  description: string;
+  description: TranslatableText;
   image: any;
 }
 
 const STATION_POINTS: StationPoint[] = [
-    {
+  {
     id: 'entrance',
-    name: 'Entrée de la gare',
+    name: {
+      fr: 'Entrée de la gare',
+      en: 'Station Entrance',
+      ar: 'مدخل المحطة',
+    },
     coordinates: { latitude: 34.0470819, longitude: -5.0051884 },
     icon: '🏛️',
-    description: 'Entrée principale de la gare',
+    description: {
+      fr: 'Entrée principale de la gare',
+      en: 'Main entrance of the station',
+      ar: 'المدخل الرئيسي للمحطة',
+    },
     image: require('../../assets/images/gare1.png'),
   },
   {
     id: 'ticket',
-    name: 'Billetterie',
+    name: {
+      fr: 'Billetterie',
+      en: 'Ticket Office',
+      ar: 'شباك التذاكر',
+    },
     coordinates: { latitude: 34.047263, longitude: -5.0049376 },
     icon: '🎫',
-    description: 'Achat des billets',
+    description: {
+      fr: 'Achat des billets',
+      en: 'Purchase tickets',
+      ar: 'شراء التذاكر',
+    },
     image: require('../../assets/images/gare20.png'),
   },
   {
     id: 'RS',
-    name: 'Rail Shop',
+    name: {
+      fr: 'Rail Shop',
+      en: 'Rail Shop',
+      ar: 'متجر القطار',
+    },
     coordinates: { latitude: 34.0473483, longitude: -5.0056002 },
     icon: '🛍️',
-    description: 'Journaux Cadeaux Gadgets',
+    description: {
+      fr: 'Journaux Cadeaux Gadgets',
+      en: 'Newspapers Gifts Gadgets',
+      ar: 'جرائد هدايا أدوات',
+    },
     image: require('../../assets/images/gare11.png'),
   },
   {
     id: 'access',
-    name: 'Accès voie',
+    name: {
+      fr: 'Accès voie',
+      en: 'Track Access',
+      ar: 'الوصول إلى المسار',
+    },
     coordinates: { latitude: 34.0474083, longitude: -5.005455 },
     icon: '🚆',
-    description: 'Accès aux quais',
+    description: {
+      fr: 'Accès aux quais',
+      en: 'Access to platforms',
+      ar: 'الوصول إلى الأرصفة',
+    },
     image: require('../../assets/images/gare16.png'),
   },
   {
     id: 'inwi',
-    name: 'Agence INWI',
+    name: {
+      fr: 'Agence INWI',
+      en: 'INWI Agency',
+      ar: 'وكالة إنوي',
+    },
     coordinates: { latitude: 34.0470166, longitude: -5.0055264 },
     icon: '📱',
-    description: 'Boutique de téléphonie',
+    description: {
+      fr: 'Boutique de téléphonie',
+      en: 'Phone shop',
+      ar: 'متجر الهواتف',
+    },
     image: require('../../assets/images/gare7.png'),
   },
   {
     id: 'venicia',
-    name: 'Venicia Ice',
+    name: {
+      fr: 'Venicia Ice',
+      en: 'Venicia Ice',
+      ar: 'فينيسيا آيس',
+    },
     coordinates: { latitude: 34.0471572, longitude: -5.0055918 },
     icon: '🍦',
-    description: 'Café et glaces',
+    description: {
+      fr: 'Café et glaces',
+      en: 'Coffee and ice cream',
+      ar: 'قهوة وآيس كريم',
+    },
     image: require('../../assets/images/gare8.png'),
   },
   {
     id: 'toilet',
-    name: 'Toilettes',
+    name: {
+      fr: 'Toilettes',
+      en: 'Restrooms',
+      ar: 'مراحيض',
+    },
     coordinates: { latitude: 34.0475047, longitude: -5.0050466 },
     icon: '🚻',
-    description: 'Sanitaires publics',
+    description: {
+      fr: 'Sanitaires publics',
+      en: 'Public restrooms',
+      ar: 'حمامات عامة',
+    },
     image: require('../../assets/images/gare16.png'),
   },
   {
     id: 'cafes',
-    name: 'Les Cafés Picasso',
+    name: {
+      fr: 'Les Cafés Picasso',
+      en: 'Picasso Cafes',
+      ar: 'مقاهي بيكاسو',
+    },
     coordinates: { latitude: 34.0471183, longitude: -5.005576 },
     icon: '☕',
-    description: "L'art du café depuis 1993",
+    description: {
+      fr: "L'art du café depuis 1993",
+      en: "The art of coffee since 1993",
+      ar: 'فن القهوة منذ عام 1993',
+    },
     image: require('../../assets/images/gare12.png'),
   },
   {
     id: 'sales',
-    name: 'Vente-Conseil',
+    name: {
+      fr: 'Vente-Conseil',
+      en: 'Sales & Advice',
+      ar: 'البيع والاستشارة',
+    },
     coordinates: { latitude: 34.0474244, longitude: -5.0050141 },
     icon: '💬',
-    description: 'Service client et conseils',
+    description: {
+      fr: 'Service client et conseils',
+      en: 'Customer service and advice',
+      ar: 'خدمة العملاء والاستشارات',
+    },
     image: require('../../assets/images/gare13.png'),
   },
 ];
+
+const LANGUAGE_VIDEOS: { [key in LanguageCode]: any } = {
+  fr: require('../../assets/videos/noraFR.mp4'),
+  en: require('../../assets/videos/noraEN.mp4'),
+  ar: require('../../assets/videos/noraAR.mp4'),
+};
 
 export default function ARScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -120,16 +205,16 @@ export default function ARScreen() {
   const [heading, setHeading] = useState<number>(0);
   const [devicePitch, setDevicePitch] = useState<number>(0);
   const [deviceRoll, setDeviceRoll] = useState<number>(0);
-  const { translations, isDarkMode } = useLanguage();
+  const { translations, isDarkMode, currentLanguage, isRTL } = useLanguage();
   const router = useRouter();
   const isFocused = useIsFocused();
   const cameraRef = useRef<CameraView>(null);
-  
-  // Animation refs
+
   const panelAnim = useRef(new Animated.Value(0)).current;
   const dockAnim = useRef(new Animated.Value(0)).current;
 
-  // Memoized theme colors
+  const [showIntroVideo, setShowIntroVideo] = useState(true);
+
   const themeColors = useMemo(() => ({
     background: isDarkMode ? '#1a1a1a' : '#ffffff',
     text: isDarkMode ? '#ffffff' : '#000000',
@@ -137,10 +222,9 @@ export default function ARScreen() {
     card: isDarkMode ? '#2d2d2d' : '#ffffff',
   }), [isDarkMode]);
 
-  // Memoized haversine distance calculation
   const getDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
     const toRadians = (deg: number) => deg * Math.PI / 180;
-    const R = 6371e3; // Earth radius in meters
+    const R = 6371e3;
     const φ1 = toRadians(lat1);
     const φ2 = toRadians(lat2);
     const Δφ = toRadians(lat2 - lat1);
@@ -152,7 +236,6 @@ export default function ARScreen() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }, []);
 
-  // Memoized bearing calculation
   const getBearing = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
     const toRadians = (deg: number) => deg * Math.PI / 180;
     const toDegrees = (rad: number) => rad * 180 / Math.PI;
@@ -164,10 +247,10 @@ export default function ARScreen() {
 
     const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
     const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
-    return (toDegrees(Math.atan2(y, x)) + 360 % 360);
+    let bearing = toDegrees(Math.atan2(y, x));
+    return (bearing + 360) % 360;
   }, []);
 
-  // Project 3D point to 2D screen coordinates
   const getRelativePositionOnScreen = useCallback(
     (poi: StationPoint, currentLocation: Location.LocationObject | null) => {
       if (!currentLocation) return null;
@@ -175,25 +258,20 @@ export default function ARScreen() {
       const { latitude: lat1, longitude: lon1 } = currentLocation.coords;
       const { latitude: lat2, longitude: lon2 } = poi.coordinates;
 
-      // Calculate bearing and horizontal angle difference
       let bearingToPOI = getBearing(lat1, lon1, lat2, lon2);
       let horizontalAngleDiff = bearingToPOI - heading;
-      
-      // Normalize angle difference to [-180, 180]
+
       horizontalAngleDiff = ((horizontalAngleDiff + 180) % 360) - 180;
 
-      // Simplified vertical angle (assuming same altitude)
-      const verticalAngleRelativeToHorizon = 0;
-      const verticalAngleDiff = verticalAngleRelativeToHorizon - devicePitch;
+      const verticalAngleFromHorizon = 0;
+      const verticalAngleDiff = verticalAngleFromHorizon - devicePitch;
 
-      // Check if in FOV
       const isInHorizontalFOV = Math.abs(horizontalAngleDiff) <= CAMERA_FOV_HORIZONTAL / 2;
       const isInVerticalFOV = Math.abs(verticalAngleDiff) <= CAMERA_FOV_VERTICAL / 2;
       if (!isInHorizontalFOV || !isInVerticalFOV) return null;
 
-      // Calculate screen position
-      const x = (width / 2) + (horizontalAngleDiff / (CAMERA_FOV_HORIZONTAL / 2)) * (width / 2);
-      const y = (height / 2) - (verticalAngleDiff / (CAMERA_FOV_VERTICAL / 2)) * (height / 2);
+      const x = (width / 2) + (horizontalAngleDiff / CAMERA_FOV_HORIZONTAL) * width;
+      const y = (height / 2) - (verticalAngleDiff / CAMERA_FOV_VERTICAL) * height;
 
       const distance = getDistance(lat1, lon1, lat2, lon2);
       return { x, y, distance };
@@ -201,7 +279,6 @@ export default function ARScreen() {
     [heading, devicePitch, getBearing, getDistance]
   );
 
-  // Request and watch location/heading
   const requestAndWatchLocation = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -212,13 +289,11 @@ export default function ARScreen() {
         return () => {};
       }
 
-      // Get current location first
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
       setLocation(currentLocation);
 
-      // Watch for updates
       const locationWatcher = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
@@ -248,46 +323,51 @@ export default function ARScreen() {
     let cleanupLocation: (() => void) | undefined;
     let deviceMotionSubscription: { remove: () => void } | undefined;
 
-    const setupAR = async () => {
-      try {
-        // Request camera permissions if needed
-        if (!cameraPermission?.granted) {
-          await requestCameraPermission();
-        }
-
-        // Setup location tracking
-        cleanupLocation = await requestAndWatchLocation();
-
-        // Setup device motion
-        DeviceMotion.setUpdateInterval(DEVICE_MOTION_UPDATE_INTERVAL);
-        deviceMotionSubscription = DeviceMotion.addListener((data) => {
-          if (data.rotation) {
-            setDevicePitch(data.rotation.beta * (180 / Math.PI));
-            setDeviceRoll(data.rotation.gamma * (180 / Math.PI));
+    if (!showIntroVideo) {
+      const setupAR = async () => {
+        try {
+          if (!cameraPermission?.granted) {
+            await requestCameraPermission();
           }
-        });
 
-        // Animate dock in
-        if (cameraPermission?.granted) {
-          Animated.timing(dockAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }).start();
+          cleanupLocation = await requestAndWatchLocation();
+
+          DeviceMotion.setUpdateInterval(DEVICE_MOTION_UPDATE_INTERVAL);
+          deviceMotionSubscription = DeviceMotion.addListener((data) => {
+            if (data.rotation) {
+              setDevicePitch(data.rotation.beta * (180 / Math.PI));
+              setDeviceRoll(data.rotation.gamma * (180 / Math.PI));
+            }
+          });
+
+          if (cameraPermission?.granted) {
+            Animated.timing(dockAnim, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }).start();
+          }
+        } catch (error) {
+          console.error('AR setup error:', error);
         }
-      } catch (error) {
-        console.error('AR setup error:', error);
-      }
-    };
+      };
 
-    setupAR();
+      setupAR();
+    }
 
     return () => {
       cleanupLocation?.();
       deviceMotionSubscription?.remove();
       DeviceMotion.removeAllListeners();
     };
-  }, [isFocused, cameraPermission, requestCameraPermission, requestAndWatchLocation, dockAnim]);
+  }, [isFocused, cameraPermission, requestCameraPermission, requestAndWatchLocation, dockAnim, showIntroVideo]);
+
+  useEffect(() => {
+    // Reset to show video when screen is focused
+    if (isFocused) {
+      setShowIntroVideo(true);
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     Animated.timing(panelAnim, {
@@ -310,7 +390,7 @@ export default function ARScreen() {
         Alert.alert(
           translations?.permissionsDeniedTitle || 'Permissions Required',
           translations?.permissionsDeniedMessage ||
-            'Please grant Camera and Location permissions to use AR features.',
+          'Please grant Camera and Location permissions to use AR features.',
           [
             { text: 'OK', style: 'cancel' },
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
@@ -324,7 +404,6 @@ export default function ARScreen() {
 
   const hasAllPermissions = cameraPermission?.granted && locationPermissionStatus === 'granted';
 
-  // Memoized AR points rendering
   const renderedARPoints = useMemo(() => {
     if (!location) return null;
 
@@ -332,7 +411,6 @@ export default function ARScreen() {
       const screenPosition = getRelativePositionOnScreen(point, location);
       if (!screenPosition || screenPosition.distance > MAX_DISPLAY_DISTANCE) return null;
 
-      // Calculate scale based on distance (closer = bigger)
       const scale = Math.max(0.4, 1 - screenPosition.distance / MAX_DISPLAY_DISTANCE);
       const iconSize = 36 * scale;
 
@@ -358,10 +436,21 @@ export default function ARScreen() {
           <Text style={[styles.arPointIcon, { fontSize: iconSize }]}>
             {point.icon}
           </Text>
-          <Text style={styles.arPointText} numberOfLines={1}>
-            {point.name}
+          <Text
+            style={[
+              styles.arPointText,
+              isRTL && { textAlign: 'right' },
+            ]}
+            numberOfLines={1}
+          >
+            {point.name[currentLanguage] || point.name.en}
           </Text>
-          <Text style={styles.arPointDistance}>
+          <Text
+            style={[
+              styles.arPointDistance,
+              isRTL && { textAlign: 'right' },
+            ]}
+          >
             {screenPosition.distance >= 1000
               ? `${(screenPosition.distance / 1000).toFixed(1)} km`
               : `${Math.round(screenPosition.distance)} m`}
@@ -369,9 +458,8 @@ export default function ARScreen() {
         </TouchableOpacity>
       );
     });
-  }, [location, heading, devicePitch, getRelativePositionOnScreen]);
+  }, [location, heading, devicePitch, getRelativePositionOnScreen, currentLanguage, isRTL]);
 
-  // Memoized compass info
   const compassInfo = useMemo(() => {
     if (!selectedPoint || !location) return null;
 
@@ -381,7 +469,7 @@ export default function ARScreen() {
       selectedPoint.coordinates.latitude,
       selectedPoint.coordinates.longitude
     );
-    
+
     const distance = getDistance(
       location.coords.latitude,
       location.coords.longitude,
@@ -390,7 +478,7 @@ export default function ARScreen() {
     );
 
     return (
-      <View style={styles.compassContainer}>
+      <View style={[styles.compassContainer, isRTL && styles.compassContainerRTL]}>
         <Animated.View
           style={[
             styles.compass,
@@ -399,172 +487,250 @@ export default function ARScreen() {
         >
           <MaterialIcons name="navigation" size={40} color={'blue'} />
         </Animated.View>
-        <Text style={styles.compassText}>
+        <Text style={[styles.compassText, isRTL && { textAlign: 'right' }]}>
           {distance >= 1000
             ? `${(distance / 1000).toFixed(1)} km`
             : `${Math.round(distance)} m`}
         </Text>
       </View>
     );
-  }, [selectedPoint, location, heading, getBearing, getDistance]);
+  }, [selectedPoint, location, heading, getBearing, getDistance, isRTL]);
 
   if (!isFocused) return null;
 
+  const handleVideoPlaybackStatus = (status: any) => {
+    if (status.didJustFinish) {
+      setShowIntroVideo(false);
+    }
+  };
+
+  const currentVideoSource = LANGUAGE_VIDEOS[currentLanguage] || LANGUAGE_VIDEOS.en;
+
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {hasAllPermissions ? (
-        <>
-          <CameraView 
-            ref={cameraRef} 
-            style={styles.camera} 
-            facing="back" 
-            enableTorch={false} 
+      {showIntroVideo ? (
+        <View style={styles.videoContainer}>
+          <Video
+            source={currentVideoSource}
+            rate={1.0}
+            volume={1.0}
+            isMuted={false}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping={false}
+            useNativeControls={false}
+            style={styles.videoPlayer}
+            onPlaybackStatusUpdate={handleVideoPlaybackStatus}
           />
-
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={33} color="white" />
-            </TouchableOpacity>
-          </View>
-
-          {renderedARPoints}
-          {compassInfo}
-
-          <Animated.View
-            style={[
-              styles.bottomDock,
-              {
-                opacity: dockAnim,
-                transform: [
-                  {
-                    translateY: dockAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [100, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
+          <TouchableOpacity
+            style={[styles.skipButton, isRTL && styles.skipButtonRTL]}
+            onPress={() => setShowIntroVideo(false)}
           >
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.dockContent}
-            >
-              {STATION_POINTS.map((point) => (
-                <TouchableOpacity
-                  key={point.id}
-                  style={[
-                    styles.dockItem,
-                    {
-                      backgroundColor: selectedPoint?.id === point.id 
-                        ? themeColors.accent 
-                        : 'blue',
-                    },
-                  ]}
-                  onPress={() => setSelectedPoint(point)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.dockItemText} numberOfLines={2}>
-                    {point.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
-
-          {selectedPoint && (
+            <Text style={styles.skipButtonText}>{translations?.skipVideo || 'Skip Video'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {hasAllPermissions ? (
             <>
-              <TouchableWithoutFeedback onPress={() => setSelectedPoint(null)}>
-                <Animated.View
-                  style={[
-                    StyleSheet.absoluteFill,
-                    {
-                      zIndex: 55,
-                      opacity: panelAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, 0.5],
-                      }),
-                    },
-                  ]}
-                />
-              </TouchableWithoutFeedback>
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                facing="back"
+                enableTorch={false}
+              />
+
+              <View style={[styles.header, isRTL && styles.headerRTL]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                  <MaterialIcons
+                    name={isRTL ? 'arrow-forward' : 'arrow-back'}
+                    size={33}
+                    color="white"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {renderedARPoints}
+              {compassInfo}
 
               <Animated.View
                 style={[
-                  styles.infoPanel,
+                  styles.bottomDock,
                   {
-                    backgroundColor: themeColors.card,
-                    opacity: panelAnim,
+                    opacity: dockAnim,
                     transform: [
                       {
-                        translateY: panelAnim.interpolate({
+                        translateY: dockAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [40, 0],
+                          outputRange: [100, 0],
                         }),
                       },
                     ],
                   },
                 ]}
               >
-                <TouchableWithoutFeedback>
-                  <View>
-                    <View style={styles.infoPanelHeader}>
-                      <View style={styles.infoPanelTitle}>
-                        <Text style={[styles.infoPanelName, { color: themeColors.accent }]}>
-                          {selectedPoint.name}
-                        </Text>
-                        <Text style={styles.infoPanelIcon}>{selectedPoint.icon}</Text>
-                      </View>
-                    </View>
-
-                    <Image
-                      source={selectedPoint.image}
-                      style={styles.infoPanelImage}
-                      resizeMode="cover"
-                    />
-
-                    <Text style={[styles.infoPanelDescription, { color: themeColors.text }]}>
-                      {selectedPoint.description}
-                    </Text>
-
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.dockContent}
+                >
+                  {STATION_POINTS.map((point) => (
                     <TouchableOpacity
-                      style={[styles.directionButton, { backgroundColor: themeColors.accent }]}
-                      onPress={() => {
-                        const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedPoint.coordinates.latitude},${selectedPoint.coordinates.longitude}&travelmode=walking`;
-                        Linking.openURL(url).catch(console.error);
-                      }}
+                      key={point.id}
+                      style={[
+                        styles.dockItem,
+                        {
+                          backgroundColor: selectedPoint?.id === point.id
+                            ? themeColors.accent
+                            : 'blue',
+                        },
+                      ]}
+                      onPress={() => setSelectedPoint(point)}
+                      activeOpacity={0.7}
                     >
-                      <MaterialIcons name="directions" size={18} color="white" />
-                      <Text style={styles.directionButtonText}>Y aller</Text>
+                      <Text
+                        style={[
+                          styles.dockItemText,
+                          isRTL && { textAlign: 'right' },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {point.name[currentLanguage] || point.name.en}
+                      </Text>
                     </TouchableOpacity>
-                  </View>
-                </TouchableWithoutFeedback>
+                  ))}
+                </ScrollView>
               </Animated.View>
+
+              {selectedPoint && (
+                <>
+                  <TouchableWithoutFeedback onPress={() => setSelectedPoint(null)}>
+                    <Animated.View
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {
+                          backgroundColor: 'black',
+                          zIndex: 55,
+                          opacity: panelAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 0.5],
+                          }),
+                        },
+                      ]}
+                    />
+                  </TouchableWithoutFeedback>
+
+                  <Animated.View
+                    style={[
+                      styles.infoPanel,
+                      {
+                        backgroundColor: themeColors.card,
+                        opacity: panelAnim,
+                        transform: [
+                          {
+                            translateY: panelAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [40, 0],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    <TouchableWithoutFeedback>
+                      <View>
+                        <View style={[styles.infoPanelHeader, isRTL && styles.infoPanelHeaderRTL]}>
+                          <View style={[styles.infoPanelTitle, isRTL && styles.infoPanelTitleRTL]}>
+                            <Text
+                              style={[
+                                styles.infoPanelName,
+                                { color: themeColors.accent },
+                                isRTL && { textAlign: 'right' },
+                              ]}
+                            >
+                              {selectedPoint.name[currentLanguage] || selectedPoint.name.en}
+                            </Text>
+                            <Text style={[styles.infoPanelIcon, isRTL && styles.infoPanelIconRTL]}>
+                              {selectedPoint.icon}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Image
+                          source={selectedPoint.image}
+                          style={styles.infoPanelImage}
+                          resizeMode="cover"
+                        />
+
+                        <Text
+                          style={[
+                            styles.infoPanelDescription,
+                            { color: themeColors.text },
+                            isRTL && { textAlign: 'right' },
+                          ]}
+                        >
+                          {selectedPoint.description[currentLanguage] || selectedPoint.description.en}
+                        </Text>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.directionButton,
+                            { backgroundColor: themeColors.accent },
+                            isRTL && styles.directionButtonRTL,
+                          ]}
+                          onPress={() => {
+                            const url = `http://google.com/maps/dir/?api=1&destination=${selectedPoint.coordinates.latitude},${selectedPoint.coordinates.longitude}&travelmode=walking`;
+                            Linking.openURL(url).catch(error => console.error("Failed to open Google Maps:", error));
+                          }}
+                        >
+                          <MaterialIcons
+                            name="directions"
+                            size={18}
+                            color="white"
+                            style={isRTL && { transform: [{ scaleX: -1 }] }}
+                          />
+                          <Text
+                            style={[
+                              styles.directionButtonText,
+                              isRTL && { marginRight: 5, marginLeft: 0 },
+                            ]}
+                          >
+                            {translations.getDirections}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableWithoutFeedback>
+                  </Animated.View>
+                </>
+              )}
             </>
+          ) : (
+            <View style={[styles.permissionDeniedContainer, { backgroundColor: themeColors.background }]}>
+              <MaterialIcons name="camera-alt" size={80} color={themeColors.text} />
+              <Text
+                style={[
+                  styles.permissionDeniedText,
+                  { color: themeColors.text },
+                  isRTL && { textAlign: 'right' },
+                ]}
+              >
+                {translations?.cameraPermissionNeeded || 'Camera and location access needed for AR.'}
+              </Text>
+              <TouchableOpacity
+                onPress={handleGrantPermissions}
+                style={styles.permissionButton}
+              >
+                <Text style={styles.permissionButtonText}>
+                  {translations?.grantPermission || 'Grant Permissions'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </>
-      ) : (
-        <View style={[styles.permissionDeniedContainer, { backgroundColor: themeColors.background }]}>
-          <MaterialIcons name="camera-alt" size={80} color={themeColors.text} />
-          <Text style={[styles.permissionDeniedText, { color: themeColors.text }]}>
-            {translations?.cameraPermissionNeeded || 'Camera and location access needed for AR.'}
-          </Text>
-          <TouchableOpacity 
-            onPress={handleGrantPermissions} 
-            style={styles.permissionButton}
-          >
-            <Text style={styles.permissionButtonText}>
-              {translations?.grantPermission || 'Grant Permissions'}
-            </Text>
-          </TouchableOpacity>
-        </View>
       )}
     </View>
   );
 }
-
-// Keep your existing styles...
 
 const styles = StyleSheet.create({
   container: {
@@ -573,8 +739,34 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-
-  // Header
+  videoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
+  },
+  skipButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    zIndex: 100,
+  },
+  skipButtonRTL: {
+    left: 20,
+    right: 'auto',
+  },
+  skipButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   header: {
     position: 'absolute',
     top: 50,
@@ -585,6 +777,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 100,
   },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
   backButton: { marginRight: 15 },
   title: {
     color: 'white',
@@ -594,14 +789,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 5,
   },
-
-  // Floating Compass
   compassContainer: {
     position: 'absolute',
     top: 80,
     right: 20,
     alignItems: 'center',
     zIndex: 90,
+  },
+  compassContainerRTL: {
+    right: 'auto',
+    left: 20,
   },
   compass: {
     backgroundColor: 'rgba(173, 216, 230, 0.8)',
@@ -627,7 +824,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
 
-  // AR Point Overlay Styles (Active)
   arPointContainer: {
     position: 'absolute',
     alignItems: 'center',
@@ -670,12 +866,12 @@ const styles = StyleSheet.create({
     color: '#add8e6',
     fontSize: 9,
     marginTop: 1,
+    textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0.5, height: 0.5 },
     textShadowRadius: 2,
   },
 
-  // Info Panel Above Dock (NOW UNCOMMENTED)
   infoPanel: {
     position: 'absolute',
     bottom: 200,
@@ -692,19 +888,28 @@ const styles = StyleSheet.create({
   infoPanelHeader: {
     marginBottom: 10,
   },
+  infoPanelHeaderRTL: {},
   infoPanelTitle: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  infoPanelTitleRTL: {
+    flexDirection: 'row-reverse',
+  },
   infoPanelName: {
     fontSize: 18,
     fontWeight: 'bold',
     flex: 1,
+    textAlign: 'left',
   },
   infoPanelIcon: {
     fontSize: 24,
     marginLeft: 10,
+  },
+  infoPanelIconRTL: {
+    marginRight: 10,
+    marginLeft: 0,
   },
   infoPanelImage: {
     width: '100%',
@@ -716,6 +921,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
     lineHeight: 18,
+    textAlign: 'left',
   },
   directionButton: {
     flexDirection: 'row',
@@ -724,13 +930,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  directionButtonRTL: {
+    flexDirection: 'row-reverse',
+  },
   directionButtonText: {
     color: 'white',
     fontWeight: 'bold',
     marginLeft: 5,
   },
 
-  // Bottom Dock Styles (Active)
   bottomDock: {
     position: 'absolute',
     bottom: 40,
@@ -752,15 +960,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
     paddingTop: 10,
+    // Removed flexDirection: 'row-reverse' here to keep the visual order consistent
   },
-  // --- DOCK ITEM STYLES (borderRadius active, borderWidth commented out, shadows still out) ---
   dockItem: {
     width: 70,
     height: 70,
     marginHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 35, // <<< This is active
+    borderRadius: 35,
   },
   dockItemIcon: {
     fontSize: 16,
@@ -775,7 +983,6 @@ const styles = StyleSheet.create({
     lineHeight: 9,
   },
 
-  // Permission Denied Styles (Fallback UI)
   permissionDeniedContainer: {
     flex: 1,
     justifyContent: 'center',

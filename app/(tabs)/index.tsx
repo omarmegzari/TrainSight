@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useLanguage } from '../../src/context/LanguageContext';
+import { useLanguage } from '../../src/context/LanguageContext'; // Adjust path if needed
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,7 +57,7 @@ export default function HomeScreen() {
     Animated.timing(sidebarAnim, {
       toValue,
       duration: 300,
-      useNativeDriver: false,
+      useNativeDriver: false, // For 'left' property, useNativeDriver must be false
     }).start(() => {
       if (!isVisible) {
         setShowSettingsButton(true);
@@ -83,37 +83,50 @@ export default function HomeScreen() {
     });
   };
 
+  const handleStationsMapPress = () => {
+    Animated.timing(sidebarAnim, {
+      toValue: width,
+      duration: 200,
+      useNativeDriver: false,
+    }).start(() => {
+      setSidebarVisible(false);
+      setShowSettingsButton(true);
+      router.push('/map');
+    });
+  };
+
   return (
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-        <StatusBar 
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
-          backgroundColor={themeColors.background} 
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={themeColors.background}
         />
-                <Image
-          source={require('../../assets/images/favicon.png')}
+        <Image
+          source={require('../../assets/images/favicon.png')} // Adjust path if needed
           style={styles.topLeftLogo}
           resizeMode="contain"
         />
 
         {showSettingsButton && (
-          <TouchableOpacity 
-            onPress={() => toggleSidebar(true)} 
+          <TouchableOpacity
+            onPress={() => toggleSidebar(true)}
             style={styles.settingsButton}
           >
+            {/* This is already good as ☰ is inside a Text component */}
             <Text style={[styles.settingsIcon, { color: themeColors.text }]}>☰</Text>
           </TouchableOpacity>
         )}
 
         <Image
-          source={require('../../assets/images/oncf.png')}
+          source={require('../../assets/images/oncf.png')} // Adjust path if needed
           style={styles.logo}
           resizeMode="contain"
         />
 
         <View style={styles.separatorContainer}>
-          <View style={[styles.separatorHalfBlack, 
-            { backgroundColor: isDarkMode ? '#ffffff' : '#000000' }]} 
+          <View style={[styles.separatorHalfBlack,
+            { backgroundColor: isDarkMode ? '#ffffff' : '#000000' }]}
           />
           <View style={[styles.separatorHalfOrange, { backgroundColor: themeColors.accent }]} />
         </View>
@@ -123,15 +136,15 @@ export default function HomeScreen() {
         </Text>
 
         <Animated.Image
-          source={require('../../assets/images/train.png')}
+          source={require('../../assets/images/train.png')} // Adjust path if needed
           style={[styles.train, { transform: [{ translateX: trainAnim }] }]}
           resizeMode="contain"
         />
 
         <TouchableWithoutFeedback>
           <Animated.View style={[
-            styles.sidebar, 
-            { 
+            styles.sidebar,
+            {
               left: sidebarAnim,
               backgroundColor: themeColors.cardBackground,
             }
@@ -141,25 +154,42 @@ export default function HomeScreen() {
             </Text>
             <View style={styles.menuSpacer} />
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.sidebarItem}
               onPress={() => router.push('/two')}
             >
-              <Text style={styles.sidebarEmoji}>📷</Text>
+              {/* FIX APPLIED: Ensure emoji is explicitly treated as string within Text */}
+              <Text style={styles.sidebarEmoji}>{'📷'}</Text>
               <Text style={[styles.sidebarText, { color: themeColors.text }]}>
                 {translations.arVisualization}
               </Text>
             </TouchableOpacity>
 
-            <View style={[styles.separatorLine, 
-              { backgroundColor: isDarkMode ? '#444' : '#ddd' }]} 
+            <View style={[styles.separatorLine,
+              { backgroundColor: isDarkMode ? '#444' : '#ddd' }]}
             />
 
-            <TouchableOpacity 
-              style={styles.sidebarItem} 
+            <TouchableOpacity
+              style={styles.sidebarItem}
+              onPress={handleStationsMapPress}
+            >
+              {/* FIX APPLIED: Ensure emoji is explicitly treated as string within Text */}
+              <Text style={styles.sidebarEmoji}>{'🗺️'}</Text>
+              <Text style={[styles.sidebarText, { color: themeColors.text }]}>
+                {translations.stationsMap}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.separatorLine,
+              { backgroundColor: isDarkMode ? '#444' : '#ddd' }]}
+            />
+
+            <TouchableOpacity
+              style={styles.sidebarItem}
               onPress={handleSettingsPress}
             >
-              <Text style={styles.sidebarEmoji}>⚙️</Text>
+              {/* FIX APPLIED: Ensure emoji is explicitly treated as string within Text */}
+              <Text style={styles.sidebarEmoji}>{'⚙️'}</Text>
               <Text style={[styles.sidebarText, { color: themeColors.text }]}>
                 {translations.settings}
               </Text>
@@ -194,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: 160,
     alignSelf: 'center',
   },
-    topLeftLogo: {
+  topLeftLogo: {
     position: 'absolute',
     top: 50,
     left: 13,

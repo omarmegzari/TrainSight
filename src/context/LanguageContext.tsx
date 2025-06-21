@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Linking } from 'react-native';
+import { Linking, I18nManager, Alert } from 'react-native';
+import * as Localization from 'expo-localization';
+
+export type LanguageCode = 'fr' | 'en' | 'ar';
 
 export interface Translations {
   officeTitle: string;
@@ -26,12 +29,24 @@ export interface Translations {
   settingsResetMessage: string;
   cameraPermissionNeeded: string;
   grantPermission: string;
-  // --- ADD THESE MISSING KEYS ---
-  permissionsDeniedTitle: string;   // <--- ADD THIS
-  permissionsDeniedMessage: string; // <--- ADD THIS
+  permissionsDeniedTitle: string;
+  permissionsDeniedMessage: string;
+  getDirections: string;
+  skipVideo: string;
+  stationsMap: string;
+  city: string;
+  region: string;
+  phone: string;
+  close: string;
+  call: string;
+  loadingMap: string;
+  trainStations: string;
+  back: string;
+  phoneCallUnavailable: string;
+  phoneCallError: string;
 }
 
-export const translations: Record<string, Translations> = {
+export const translations: Record<LanguageCode, Translations> = {
   fr: {
     officeTitle: "Office National des Chemins de Fer",
     menuTitle: "MENU",
@@ -56,9 +71,21 @@ export const translations: Record<string, Translations> = {
     settingsResetMessage: "Tous les paramètres ont été réinitialisés.",
     cameraPermissionNeeded: "Accès caméra et localisation nécessaire pour la RA.",
     grantPermission: "Accorder les autorisations",
-    // --- ADD FR TRANSLATIONS FOR NEW KEYS ---
     permissionsDeniedTitle: "Autorisations Requises",
     permissionsDeniedMessage: "Veuillez accorder les autorisations de caméra et de localisation dans les paramètres de votre appareil pour utiliser les fonctionnalités AR.",
+    getDirections: "Y aller",
+    skipVideo: "Passer la vidéo",
+    stationsMap: "Carte des gares",
+    city: "Ville",
+    region: "Région",
+    phone: "Téléphone",
+    close: "Fermer",
+    call: "Appeler",
+    loadingMap: "Chargement de la carte...",
+    trainStations: "gares ONCF",
+    back: "Retour",
+    phoneCallUnavailable: "Impossible de passer un appel téléphonique sur cet appareil.",
+    phoneCallError: "Une erreur est survenue lors de la tentative d'appel.",
   },
   en: {
     officeTitle: "National Railway Office",
@@ -84,9 +111,21 @@ export const translations: Record<string, Translations> = {
     settingsResetMessage: "All settings have been reset.",
     cameraPermissionNeeded: "Camera and location access needed for AR.",
     grantPermission: "Grant Permissions",
-    // --- ADD EN TRANSLATIONS FOR NEW KEYS ---
     permissionsDeniedTitle: "Permissions Required",
     permissionsDeniedMessage: "Please grant Camera and Location permissions in your device settings to use AR features.",
+    getDirections: "Get Directions",
+    skipVideo: "Skip Video",
+    stationsMap: "Stations Map",
+    city: "City",
+    region: "Region",
+    phone: "Phone",
+    close: "Close",
+    call: "Call",
+    loadingMap: "Loading map...",
+    trainStations: "train stations",
+    back: "Back",
+    phoneCallUnavailable: "Unable to make a phone call on this device.",
+    phoneCallError: "An error occurred while trying to make the call.",
   },
   ar: {
     officeTitle: "المكتب الوطني للسكك الحديدية",
@@ -112,19 +151,32 @@ export const translations: Record<string, Translations> = {
     settingsResetMessage: "تمت إعادة تعيين جميع الإعدادات.",
     cameraPermissionNeeded: "مطلوب الوصول إلى الكاميرا والموقع للواقع المعزز.",
     grantPermission: "منح الأذونات",
-    // --- ADD AR TRANSLATIONS FOR NEW KEYS ---
     permissionsDeniedTitle: "الأذونات مطلوبة",
     permissionsDeniedMessage: "يرجى منح أذونات الكاميرا والموقع في إعدادات جهازك لاستخدام ميزات الواقع المعزز.",
+    getDirections: "اذهب إلى هناك",
+    skipVideo: "تخطي الفيديو",
+    stationsMap: "خريطة المحطات",
+    city: "المدينة",
+    region: "الجهة",
+    phone: "الهاتف",
+    close: "إغلاق",
+    call: "اتصال",
+    loadingMap: "جارٍ تحميل الخريطة...",
+    trainStations: "محطات القطار",
+    back: "رجوع",
+    phoneCallUnavailable: "تعذر إجراء مكالمة هاتفية على هذا الجهاز.",
+    phoneCallError: "حدث خطأ أثناء محاولة إجراء المكالمة.",
   }
 };
 
 interface LanguageContextType {
-  currentLanguage: string;
+  currentLanguage: LanguageCode;
   translations: Translations;
-  changeLanguage: (languageCode: string) => void;
+  changeLanguage: (languageCode: LanguageCode) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   openOfficialWebsite: () => void;
+  isRTL: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -134,8 +186,9 @@ interface LanguageProviderProps {
 }
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-  const [currentLanguage, setCurrentLanguage] = useState('fr');
+  const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>('fr');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isRTL, setIsRTL] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -144,14 +197,35 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         AsyncStorage.getItem('darkMode'),
       ]);
 
-      if (language) setCurrentLanguage(language);
+      let initialLanguage: LanguageCode = 'en';
+
+      const deviceLocales = Localization.getLocales();
+      const deviceLanguageCode = deviceLocales.length > 0 ? deviceLocales[0].languageCode : null;
+
+      if (deviceLanguageCode && ['fr', 'en', 'ar'].includes(deviceLanguageCode)) {
+        initialLanguage = deviceLanguageCode as LanguageCode;
+      }
+
+      if (language && (language === 'fr' || language === 'en' || language === 'ar')) {
+        initialLanguage = language as LanguageCode;
+      }
+
+      setCurrentLanguage(initialLanguage);
       if (theme) setIsDarkMode(theme === 'true');
     };
 
     loadSettings();
   }, []);
 
-  const changeLanguage = async (languageCode: string) => {
+  useEffect(() => {
+    const shouldBeRTL = currentLanguage === 'ar';
+    if (I18nManager.isRTL !== shouldBeRTL) {
+      I18nManager.forceRTL(shouldBeRTL);
+    }
+    setIsRTL(shouldBeRTL);
+  }, [currentLanguage]);
+
+  const changeLanguage = async (languageCode: LanguageCode) => {
     setCurrentLanguage(languageCode);
     await AsyncStorage.setItem('appLanguage', languageCode);
   };
@@ -175,11 +249,12 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   return (
     <LanguageContext.Provider value={{
       currentLanguage,
-      translations: translations[currentLanguage] || translations.fr, // Fallback to French if current language translations are missing
+      translations: translations[currentLanguage],
       changeLanguage,
       isDarkMode,
       toggleDarkMode,
-      openOfficialWebsite
+      openOfficialWebsite,
+      isRTL,
     }}>
       {children}
     </LanguageContext.Provider>

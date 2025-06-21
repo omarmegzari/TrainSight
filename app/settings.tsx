@@ -10,7 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useLanguage } from '../src/context/LanguageContext';
+import { useLanguage } from '../src/context/LanguageContext'; // Adjust path if needed
+
+// Define LanguageCode type if not imported from context
+type LanguageCode = 'fr' | 'en' | 'ar';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -31,7 +34,7 @@ export default function SettingsScreen() {
   ];
 
   const handleLanguageSelect = (languageCode: string, languageName: string) => {
-    changeLanguage(languageCode);
+    changeLanguage(languageCode as LanguageCode);
     Alert.alert(
       translations.languageChanged,
       `${translations.languageSelectedMessage} ${languageName}`,
@@ -50,7 +53,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             if (isDarkMode) toggleDarkMode();
-            changeLanguage('fr');
+            changeLanguage('fr' as LanguageCode);
             Alert.alert(
               translations.settingsReset,
               translations.settingsResetMessage,
